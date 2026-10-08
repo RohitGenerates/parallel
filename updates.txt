@@ -1,0 +1,616 @@
+The repository contains two Parallel Computing laboratory projects:
+
+* `project1/` — Standard Row-Major Parallel Matrix Multiplication
+* `project2/` — Cache-Optimized Tiled Matrix Multiplication
+
+I need you to **modify the projects so that the benchmark scripts execute the actual C/OpenMP programs and measure real performance**, rather than using hard-coded/reference benchmark numbers.
+
+This is important: the final benchmark output must come from actually running the C executables on the machine.
+
+## CRITICAL REQUIREMENT
+
+DO NOT fabricate, hard-code, simulate, or reuse the existing benchmark timings.
+
+The following existing/reference values must NOT be used as measured results:
+
+Project 1:
+
+* 500: 0.285, 0.152, 0.081, 0.046
+* 1000: 2.450, 1.290, 0.670, 0.365
+* 2000: 21.800, 11.240, 5.750, 3.120
+
+Project 2:
+
+* Do not use the existing hard-coded benchmark data.
+
+Those numbers can remain in the report as historical/reference values if necessary, but the benchmark scripts must perform real measurements.
+
+---
+
+# PROJECT 1
+
+Inspect:
+
+```text
+project1/src/matmul_seq.c
+project1/src/matmul_omp.c
+project1/benchmark/run_benchmarks.py
+```
+
+Understand the existing C programs before modifying anything.
+
+The benchmark script must:
+
+1. Check that GCC exists.
+2. Check that OpenMP compilation is available.
+3. Compile the sequential program.
+
+Example:
+
+```bash
+gcc -O3 src/matmul_seq.c -o src/matmul_seq -lm
+```
+
+4. Compile the OpenMP program.
+
+Example:
+
+```bash
+gcc -O3 -fopenmp src/matmul_omp.c -o src/matmul_omp -lm
+```
+
+5. Execute the ACTUAL binaries.
+
+For matrix sizes:
+
+```text
+500
+1000
+2000
+```
+
+Run the sequential implementation for each size.
+
+Then run the OpenMP implementation using:
+
+```text
+2 threads
+4 threads
+8 threads
+```
+
+For example:
+
+```bash
+./src/matmul_seq 1000
+./src/matmul_omp 1000 2
+./src/matmul_omp 1000 4
+./src/matmul_omp 1000 8
+```
+
+Do not merely calculate results from existing numbers.
+
+---
+
+# TIMING
+
+Use reliable wall-clock timing.
+
+Prefer Python's:
+
+```python
+time.perf_counter()
+```
+
+around the subprocess execution.
+
+For example, conceptually:
+
+```python
+start = time.perf_counter()
+
+subprocess.run(..., check=True)
+
+elapsed = time.perf_counter() - start
+```
+
+Do NOT include compilation time in the measured execution time.
+
+Only measure the matrix multiplication program execution.
+
+---
+
+# REPEATED MEASUREMENTS
+
+For each configuration, run the program multiple times.
+
+Prefer:
+
+```text
+3 warm-up runs
+5 measured runs
+```
+
+or another reasonable methodology if the existing project structure suggests something better.
+
+Report:
+
+* Mean execution time
+* Minimum execution time
+* Standard deviation if practical
+
+Avoid using a single noisy measurement.
+
+Make the number of repetitions configurable at the top of the script.
+
+For example:
+
+```python
+WARMUP_RUNS = 1
+MEASURED_RUNS = 3
+```
+
+Do not make the benchmark unnecessarily slow on the 2000×2000 case.
+
+---
+
+# PROJECT 1 METRICS
+
+After collecting the REAL execution times, calculate:
+
+### Speedup
+
+```text
+Speedup = Sequential Time / Parallel Time
+```
+
+### Parallel Efficiency
+
+```text
+Efficiency = Speedup / Number of Threads × 100
+```
+
+Generate a table like:
+
+```text
+============================================================
+PROJECT 1 — REAL BENCHMARK RESULTS
+============================================================
+
+Matrix      Sequential    2 Threads    4 Threads    8 Threads
+500x500     ...
+1000x1000   ...
+2000x2000   ...
+
+------------------------------------------------------------
+
+Matrix      Threads       Time          Speedup       Efficiency
+500x500     2             ...
+500x500     4             ...
+500x500     8             ...
+...
+```
+
+Make it obvious that these are measured values.
+
+---
+
+# PROJECT 2
+
+Inspect:
+
+```text
+project2/src/matrix_engine.h
+project2/src/matrix_engine.c
+project2/src/main.c
+project2/benchmark/evaluate_perf.py
+```
+
+Understand the actual command-line interface before modifying the benchmark.
+
+The current expected compilation is approximately:
+
+```bash
+gcc -O3 -fopenmp src/matrix_engine.c src/main.c -o src/matmul_engine -lm
+```
+
+The executable supports parameters such as:
+
+```bash
+./src/matmul_engine -n 1000 -t 4 -b 64
+```
+
+Verify this against the actual source code instead of assuming it.
+
+---
+
+# PROJECT 2 BENCHMARK
+
+The benchmark must actually execute the compiled C program.
+
+Test:
+
+```text
+Matrix sizes:
+500
+1000
+2000
+
+Threads:
+2
+4
+8
+
+Tile size:
+64
+```
+
+If the source code supports a sequential baseline, measure that actual implementation too.
+
+If it does NOT support a sequential mode, do not invent one. Either:
+
+1. determine whether the existing source has a sequential kernel that can be exposed through the CLI, or
+2. make the smallest appropriate code modification to expose the sequential baseline.
+
+The benchmark must clearly document which implementation is being compared.
+
+---
+
+# PROJECT 2 METRICS
+
+Calculate actual:
+
+```text
+Execution Time
+Speedup
+Parallel Efficiency
+GFLOPS
+```
+
+For dense matrix multiplication:
+
+```text
+FLOPs = 2 × N³
+```
+
+Therefore:
+
+```text
+GFLOPS = (2 × N³) / (execution_time × 10^9)
+```
+
+Use the actual measured execution time.
+
+Generate a table such as:
+
+```text
+============================================================
+PROJECT 2 — REAL BENCHMARK RESULTS
+============================================================
+
+Matrix      Threads      Time       Speedup     Efficiency    GFLOPS
+500x500     2            ...
+500x500     4            ...
+500x500     8            ...
+
+1000x1000   2            ...
+...
+```
+
+---
+
+# IMPORTANT: VERIFY CORRECTNESS
+
+Before benchmarking, make sure the matrix multiplication is actually producing correct results.
+
+If the current programs already have validation/checksum output, preserve it.
+
+If they do not, add a lightweight correctness mechanism.
+
+For example:
+
+* deterministic matrix initialization
+* checksum of C
+* comparison against a known/reference result
+
+Do NOT print millions of matrix elements.
+
+A simple checksum or validation message is preferable:
+
+```text
+Validation: PASS
+Checksum: ...
+```
+
+For Project 1, both sequential and OpenMP versions should produce equivalent results.
+
+For Project 2, the optimized implementation should also be validated against the reference implementation.
+
+---
+
+# IMPORTANT: DON'T DISTORT THE BENCHMARK
+
+Do not add debugging output inside the matrix multiplication loops.
+
+Do not print every matrix element.
+
+Do not perform validation in the timed section.
+
+The timed section should represent the actual multiplication workload.
+
+Ideally:
+
+```text
+initialize matrices
+        ↓
+start timer
+        ↓
+matrix multiplication
+        ↓
+stop timer
+        ↓
+validate/checksum
+```
+
+---
+
+# HARDWARE INFORMATION
+
+The benchmark script should print the machine information at the beginning.
+
+At minimum collect:
+
+```text
+CPU model
+Logical CPUs
+Physical cores if available
+Compiler version
+Python version
+OpenMP version if available
+Operating system
+```
+
+On Linux you can obtain CPU information using `/proc/cpuinfo` or `lscpu`.
+
+The output should look approximately like:
+
+```text
+============================================================
+SYSTEM INFORMATION
+============================================================
+CPU: Intel(R) Core(...)
+Logical CPUs: 16
+GCC: ...
+Python: ...
+OS: Ubuntu ...
+OpenMP: ...
+============================================================
+```
+
+Do not hard-code my laptop's CPU information.
+
+It must detect the machine where the benchmark is actually executed.
+
+---
+
+# THREAD CONTROL
+
+Make sure OpenMP thread counts are actually controlled.
+
+For each run, explicitly set the requested thread count.
+
+You can either:
+
+```python
+env["OMP_NUM_THREADS"] = str(threads)
+```
+
+or use the program's thread argument if it already provides one.
+
+Do not accidentally benchmark all configurations using the same number of threads.
+
+---
+
+# CPU / SYSTEM FAIRNESS
+
+Before running the benchmark, provide a warning that:
+
+* background applications can affect results
+* CPU temperature can affect results
+* laptop power mode can affect results
+* thermal throttling can affect results
+
+The script should NOT attempt to manipulate CPU frequency, disable system security, or change dangerous system settings.
+
+Just inform the user to keep the machine reasonably idle.
+
+---
+
+# SAVE RESULTS
+
+Do not only print the benchmark results.
+
+Save them to a machine-readable file.
+
+Prefer:
+
+```text
+benchmark/results/project1_results.csv
+benchmark/results/project2_results.csv
+```
+
+Also generate a human-readable report:
+
+```text
+benchmark/results/project1_results.txt
+benchmark/results/project2_results.txt
+```
+
+If practical, also generate:
+
+```text
+benchmark/results/project1_results.json
+benchmark/results/project2_results.json
+```
+
+Do not commit generated results automatically.
+
+---
+
+# README
+
+After modifying the benchmark system, update:
+
+```text
+README.md
+project1/README.md
+project2/README.md
+```
+
+where appropriate.
+
+The README must clearly explain:
+
+```text
+1. Clone repository
+2. Install dependencies
+3. Check GCC
+4. Check OpenMP
+5. Build Project 1
+6. Run Project 1 benchmark
+7. Build Project 2
+8. Run Project 2 benchmark
+9. Where the results are saved
+10. How to interpret speedup/efficiency/GFLOPS
+```
+
+Remove or correct misleading statements such as:
+
+```text
+"Instant Run with Python (No Compiler Required)"
+```
+
+because the real benchmark requires compiling and executing the C/OpenMP programs.
+
+---
+
+# ONE-COMMAND EXPERIENCE
+
+Make the final workflow as simple as possible.
+
+Ideally:
+
+Project 1:
+
+```bash
+cd project1
+python3 benchmark/run_benchmarks.py
+```
+
+should:
+
+```text
+check dependencies
+        ↓
+compile C programs
+        ↓
+run correctness checks
+        ↓
+run benchmarks
+        ↓
+calculate metrics
+        ↓
+save results
+        ↓
+print final tables
+```
+
+Project 2:
+
+```bash
+cd project2
+python3 benchmark/evaluate_perf.py
+```
+
+should perform the equivalent workflow.
+
+If automatic compilation is not appropriate for some reason, document the exact prerequisite build command instead.
+
+---
+
+# DO NOT FAKE RESULTS
+
+This is the most important requirement.
+
+The Python scripts must NEVER contain a dictionary such as:
+
+```python
+c_reference_timings = {...}
+```
+
+or:
+
+```python
+benchmark_data = {...}
+```
+
+that is used as the benchmark result.
+
+Every reported execution time must originate from an actual subprocess execution of the compiled C program.
+
+If execution fails, the script must report the error rather than substituting a predefined value.
+
+For example:
+
+```text
+ERROR: Project 1 OpenMP benchmark failed for N=2000, threads=8.
+No result generated.
+```
+
+Do NOT silently continue with fake/reference values.
+
+---
+
+# FINAL VALIDATION
+
+After making the changes, actually test the benchmark scripts yourself.
+
+At minimum test:
+
+```text
+Project 1:
+500 × 500
+2 threads
+```
+
+and:
+
+```text
+Project 2:
+500 × 500
+2 threads
+```
+
+Then, if practical, run the complete benchmark suite.
+
+Verify that:
+
+1. The C programs compile.
+2. The binaries execute.
+3. The timer measures actual execution.
+4. Different thread counts produce different runs.
+5. Results are calculated from measured times.
+6. CSV/TXT/JSON files are generated correctly.
+7. No hard-coded benchmark timings remain.
+8. README instructions work from a fresh Ubuntu checkout.
+
+Finally, show me:
+
+* the files you modified
+* the important code changes
+* the exact commands used
+* sample REAL benchmark output
+* where the result files were generated
+* any issues encountered
+
+Do not claim a benchmark was measured unless the executable was actually run.
