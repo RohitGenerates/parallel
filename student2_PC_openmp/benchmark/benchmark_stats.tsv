@@ -1,0 +1,15 @@
+Category	Configuration	Time_Sec
+RingBuffer	1x1	0.102000
+RingBuffer	2x2	0.055000
+RingBuffer	1x4	0.023000
+RingBuffer	4x1	0.130000
+RingBuffer	4x4	0.040000
+Schedule_STATIC	2_threads	0.024000
+Schedule_DYNAMIC	2_threads	0.024000
+Schedule_GUIDED	2_threads	0.024000
+Schedule_STATIC	4_threads	0.013000
+Schedule_DYNAMIC	4_threads	0.012000
+Schedule_GUIDED	4_threads	0.012000
+Schedule_STATIC	8_threads	0.008000
+Schedule_DYNAMIC	8_threads	0.007000
+Schedule_GUIDED	8_threads	0.007000
